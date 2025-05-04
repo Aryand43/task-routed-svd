@@ -3,26 +3,42 @@ using BenchmarkTools
 using CSV, DataFrames
 using Dates
 using ThreadsX
-using Base.Threads: @threads, nthreads, lock, unlock, ReentrantLock
+using Base.Threads: @threads, nthreads, lock, unlock, ReentrantLock, Atomic, atomic_add!, atomic_get
+
+function softmax(x::Vector{Float64})
+    exps = exp.(x .- maximum(x))
+    return exps ./ sum(exps)
+end
 
 function task_based_svd(A::Matrix{Float64}, chunks::Int)
     n = size(A, 1)
     chunk_size = div(n, chunks)
     svd_results = Vector{Any}(undef, chunks)
-    
-    # Thread-safe logging using lock
+    raw_scores = randn(chunks) 
+    softmax_scores = softmax(raw_scores)
+    sorted_chunks = sortperm(softmax_scores, rev=true)
     activated_experts = Set{Int}()
     lock_obj = ReentrantLock()
-
-    @threads for i in 1:chunks
-        idx_start = (i - 1) * chunk_size + 1
-        idx_end = i == chunks ? n : i * chunk_size
-        svd_results[i] = svd(A[idx_start:idx_end, :])
-        lock(lock_obj) do
-            push!(activated_experts, i)
+    work_queue = [Threads.Atomic{Int}(i) for i in sorted_chunks]
+    queue_index = Threads.Atomic{Int}(1)
+    @threads for thread_id in 1:nthreads()
+        while true
+            i = queue_index[]
+            if i > length(work_queue)
+                break
+            end
+            chunk_id = work_queue[i].value
+            queue_index[] += 1
+            idx_start = (chunk_id - 1) * chunk_size + 1
+            idx_end = chunk_id == chunks ? n : chunk_id * chunk_size
+    
+            svd_results[chunk_id] = svd(A[idx_start:idx_end, :])
+    
+            lock(lock_obj) do
+                push!(activated_experts, chunk_id)
+            end
         end
-    end
-
+    end    
     timestamp = Dates.format(now(), "yyyy-mm-dd HH:MM:SS")
     logfile = "logs/expert_gradients.csv"
     mkpath(dirname(logfile))  # Ensure logs/ exists

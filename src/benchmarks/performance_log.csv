@@ -1,0 +1,2 @@
+Timestamp,Rows,Cols,Chunks,Threads,Time_ms,Allocations,Memory_MB
+2025-05-04 16:03:52,10000,1000,4,12,3191.8355,604,385.98841381073
