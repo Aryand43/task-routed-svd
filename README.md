@@ -1,24 +1,46 @@
 # Task-Routed SVD
 
-This project explores task-based parallelism in matrix decomposition using Julia.  
-Inspired by Mixture-of-Experts (MoE) architectures in large language models, the idea is to selectively activate chunks ("experts") of a matrix during SVD computations to gain efficiency improvements.
+This project explores **task-based parallelism** in matrix decomposition using Julia, drawing inspiration from **Mixture-of-Experts (MoE)** architectures used in large-scale language models.
+
+The system dynamically selects which chunks ("experts") of a matrix to activate during SVD computation, optimizing compute usage while simulating ML-like routing logic and gradient feedback.
+
+---
 
 ## Features
-- Threaded matrix SVD decomposition using `Threads.@threads`
-- Simulated task routing across matrix partitions
-- Benchmarking scripts and timing utilities
-- Modular, extensible code structure for future experiments
+
+- Multithreaded SVD decomposition via `Threads.@threads`
+- Softmax-based simulated routing to prioritize important chunks
+- Dynamic load balancing through a thread-safe expert queue
+- Simulated gradient logging (active vs. inactive experts)
+- Performance + memory benchmarking with CSV logging
+- Modular and extensible structure for future ML integration
+
+---
 
 ## Motivation
-Inspired by:
-- Mixture of Experts architectures (Sparse MoE models)
-- HuggingFace engineering posts on scalable sparse compute
-- Parallelized linear algebra needs in HPC and AI scaling
+
+Inspired by cutting-edge techniques in scalable ML and HPC:
+
+- Sparse Mixture-of-Experts (MoE) architectures
+- Sparse backpropagation techniques (e.g., SparseMixer)
+- Google’s GShard and HuggingFace engineering posts
+- Efficient SVD decomposition in parallel compute environments
+
+---
 
 ## Requirements
+
 - Julia ≥ 1.9
-- Packages: `BenchmarkTools`, `LinearAlgebra`, `Threads`
+- Packages:
+  - `BenchmarkTools`
+  - `LinearAlgebra`
+  - `CSV`
+  - `DataFrames`
+  - `ThreadsX`
+
+---
 
 ## How to Run
+
 ```bash
 julia --threads auto src/task_routed_svd.jl
